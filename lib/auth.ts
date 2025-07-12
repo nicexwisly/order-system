@@ -1,44 +1,29 @@
 import { supabase } from "./supabase"
 import type { User } from "./supabase"
+import bcrypt from "bcryptjs"
 
 export async function signIn(username: string, password: string) {
   try {
-    // Query users table with password verification
-    const { data, error } = await supabase
+    const { data: userData, error } = await supabase
       .from("users")
-      .select("id, username, role")
+      .select("*")
       .eq("username", username)
-      .eq("password_hash", supabase.rpc("crypt", { password, salt: supabase.rpc("gen_salt", "bf") }))
-      .single()
+      .single();
 
-    if (error || !data) {
-      // Fallback: simple password check for demo purposes
-      const { data: userData, error: userError } = await supabase
-        .from("users")
-        .select("id, username, role, password_hash")
-        .eq("username", username)
-        .single()
-
-      if (userError || !userData) {
-        throw new Error("Invalid credentials")
-      }
-
-      // Simple password verification (in production, use proper bcrypt comparison)
-      const isValidPassword =
-        (username === "admin" && password === "admin01") ||
-        (username === "fish" && password === "fish01") ||
-        (username === "pork" && password === "pork01")
-
-      if (!isValidPassword) {
-        throw new Error("Invalid credentials")
-      }
-
-      return { user: userData as User }
+    if (error || !userData) {
+      throw new Error("Invalid username or password")
     }
 
-    return { user: data as User }
+    const isValidPassword = await bcrypt.compare(password, userData.password_hash);
+
+    if (!isValidPassword) {
+      throw new Error("Invalid username or password")
+    }
+
+    return { user: userData as User }
+
   } catch (error) {
-    throw new Error("Invalid credentials")
+    throw new Error("Invalid username or password")
   }
 }
 

@@ -1,7 +1,12 @@
--- Insert predefined users with hashed passwords
--- Note: In production, use proper password hashing like bcrypt
-INSERT INTO users (username, password_hash, role) VALUES
+-- Ensure pgcrypto extension exists
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Remove any existing rows for these usernames
+DELETE FROM users WHERE username IN ('admin', 'fish', 'pork');
+
+-- Insert new hashed users
+INSERT INTO users (username, password_hash, role)
+VALUES
   ('admin', crypt('admin01', gen_salt('bf')), 'admin'),
-  ('fish', crypt('fish01', gen_salt('bf')), 'fish'),
-  ('pork', crypt('pork01', gen_salt('bf')), 'pork')
-ON CONFLICT (username) DO NOTHING;
+  ('fish',  crypt('fish01', gen_salt('bf')), 'fish'),
+  ('pork',  crypt('pork01', gen_salt('bf')), 'pork');
